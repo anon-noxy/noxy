@@ -1,0 +1,135 @@
+/* color palette from <https://github.com/catppuccin/catppuccin> */
+@font-face {
+  font-family: 'Lexend Deca';
+  src: url('../font/LexendDeca-VariableFont_wght.ttf') format('truetype');
+  font-display: swap;
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+:root {
+  color-scheme: dark;
+
+  --vt-c-white: #f5e0dc; /* Latte Base */
+  --vt-c-white-soft: #f2cdcd; /* Latte Mantle */
+  --vt-c-white-mute: #f5c2e7; /* Latte Overlay */
+
+  --vt-c-black: #1e1e2e; /* Mocha Base */
+  --vt-c-black-soft: #181825; /* Mocha Mantle */
+  --vt-c-black-mute: #313244; /* Mocha Overlay */
+
+  --vt-c-indigo: #89b4fa; /* Sapphire */
+
+  --vt-c-divider-light-1: rgba(136, 192, 208, 0.29); /* Light Divider */
+  --vt-c-divider-light-2: rgba(136, 192, 208, 0.12); /* Light Divider Soft */
+  --vt-c-divider-dark-1: rgba(148, 162, 179, 0.65); /* Dark Divider */
+  --vt-c-divider-dark-2: rgba(148, 162, 179, 0.48); /* Dark Divider Soft */
+
+  --vt-c-text-light-1: var(--vt-c-indigo);
+  --vt-c-text-light-2: rgba(136, 192, 208, 0.66); /* Light Text */
+  --vt-c-text-dark-1: var(--vt-c-white);
+  --vt-c-text-dark-2: rgba(245, 224, 220, 0.64); /* Dark Text */
+
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* semantic color variables for this project */
+:root {
+  --color-background: var(--vt-c-black);
+  --color-background-soft: var(--vt-c-black-soft);
+  --color-background-mute: var(--vt-c-black-mute);
+
+  --color-border: var(--vt-c-divider-dark-2);
+  --color-border-hover: var(--vt-c-divider-dark-1);
+
+  --color-heading: var(--vt-c-text-dark-1);
+  --color-text: var(--vt-c-text-dark-1);
+
+  --section-gap: 160px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  font-weight: normal;
+}
+
+/* Give every enabled, semantic click target a consistent pointer cursor.
+   :where() keeps specificity low so component cursor utilities can override it. */
+:where(
+  a[href],
+  area[href],
+  button:not(:disabled),
+  input:not(:disabled):is(
+      [type='button'],
+      [type='submit'],
+      [type='reset'],
+      [type='checkbox'],
+      [type='radio'],
+      [type='file']
+    ),
+  select:not(:disabled),
+  summary,
+  label[for],
+  [role='button']:not([aria-disabled='true']),
+  [role='link']:not([aria-disabled='true'])
+) {
+  cursor: pointer;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--color-text);
+  background: var(--color-background);
+  transition:
+    color 0.5s,
+    background-color 0.5s;
+  line-height: 1.6;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+  font-size: 15px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(249, 168, 212, 0.35);
+  color: var(--color-heading);
+}
+
+/* WebKit scrollbar styling using Catppuccin theme */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background-soft);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--vt-c-indigo);
+  border-radius: 10px;
+  border: 3px solid var(--color-background-soft);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--vt-c-text-dark-1);
+}

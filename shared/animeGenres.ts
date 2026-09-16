@@ -1,0 +1,48 @@
+export const supportedAnimeGenres = [
+  'Action',
+  'Adventure',
+  'Comedy',
+  'Drama',
+  'Fantasy',
+  'Horror',
+  'Mystery',
+  'Romance',
+  'Sci-Fi',
+  'Sports',
+  'Supernatural',
+  'Adult Cast',
+  'Avant Garde',
+  'Award Winning',
+  'Ecchi',
+  'Gore',
+  'High Stakes Game',
+  'Historical',
+  'Isekai',
+  'Love Polygon',
+  'Martial Arts',
+  'Mecha',
+  'Military',
+  'Music',
+  'Mythology',
+  'Parody',
+  'Performing Arts',
+  'Psychological',
+  'School',
+  'Seinen',
+  'Shounen',
+  'Space',
+  'Strategy Game',
+  'Super Power',
+  'Survival',
+  'Suspense',
+  'Team Sports',
+  'Time Travel',
+  'Urban Fantasy',
+  'Video Game',
+] as const
+
+const supportedAnimeGenreNames = new Set(supportedAnimeGenres.map((genre) => genre.toUpperCase()))
+
+export const isSupportedAnimeGenre = (genre?: string) => {
+  return Boolean(genre && supportedAnimeGenreNames.has(genre.trim().toUpperCase()))
+}
