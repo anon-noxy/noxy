@@ -9,7 +9,7 @@ import {
   type MalAnime,
   type MappedDetails,
 } from '../../utils/mal'
-import { fetchAniListAnimeSupplement } from '../../utils/anilist'
+import { fetchAniListAnimeSupplement, fetchAniListReleasedEpisodeCounts } from '../../utils/anilist'
 
 type MappedRelation = MappedDetails['relations']['nodes'][number]
 type DetailsCacheResult =
@@ -335,15 +335,27 @@ const handler = defineCachedEventHandler(
     const details = toMappedDetails(response)
     const animeSupplementPromise = fetchAniListAnimeSupplement(response.id)
     const relations = await resolveAllowedFallbackRelations(event, details.relations.nodes)
-    const [animeSupplement, seasonRelations] = await Promise.all([
+    const [animeSupplement, seasonRelations, releasedEpisodeCounts] = await Promise.all([
       animeSupplementPromise,
       resolveSeasonRelations(event, details, relations),
+      fetchAniListReleasedEpisodeCounts([response.id]),
     ])
+    const releasedEpisodeCount = releasedEpisodeCounts.get(response.id) || 0
+    const hasReleasedEpisodeOverride = details.status === 'RELEASING' && releasedEpisodeCount > 0
+    const nextAiringEpisode = hasReleasedEpisodeOverride
+      ? {
+          airingAt: details.nextAiringEpisode?.airingAt || 0,
+          episode: releasedEpisodeCount + 1,
+          timeUntilAiring: details.nextAiringEpisode?.timeUntilAiring || 0,
+        }
+      : details.nextAiringEpisode
 
     return {
       ok: true,
       data: {
         ...details,
+        episodes: hasReleasedEpisodeOverride ? releasedEpisodeCount : details.episodes,
+        nextAiringEpisode,
         bannerImage: animeSupplement.bannerImage,
         streamingEpisodes: animeSupplement.streamingEpisodes,
         genres: toSafeGenres(details.genres),

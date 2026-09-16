@@ -27,6 +27,10 @@ const toEpisodeRange = (count: number) => {
   return Array.from({ length: count }, (_, index) => index + 1)
 }
 
+const isCompleteEpisodeList = (episodes: number[]) => {
+  return Boolean(episodes.length && episodes[0] === 1 && episodes.every((episode, index) => episode === index + 1))
+}
+
 const getKnownEpisodeCount = (media: EpisodeSourceMedia) => {
   if (media.status === 'RELEASING' && media.nextAiringEpisode?.episode) {
     return Math.max(media.nextAiringEpisode.episode - 1, 0)
@@ -60,6 +64,12 @@ export const getAvailableEpisodeNumbers = (media?: EpisodeSourceMedia | null) =>
   ).sort((left, right) => left - right)
 
   const knownEpisodeCount = getKnownEpisodeCount(media)
+
+  if (media.status === 'RELEASING' && isCompleteEpisodeList(listedEpisodes)) {
+    const nextAiringEpisode = media.nextAiringEpisode?.episode || 0
+
+    return nextAiringEpisode ? listedEpisodes.filter((episode) => episode < nextAiringEpisode) : listedEpisodes
+  }
 
   if (shouldCapToKnownEpisodeCount(media, knownEpisodeCount)) {
     return toEpisodeRange(knownEpisodeCount)

@@ -574,6 +574,10 @@ const releasedEpisodeNumbers = computed(() => {
   return getAvailableEpisodeNumbers(anime.value)
 })
 
+const hasListedStreamingEpisodes = computed(() => {
+  return Boolean(anime.value?.streamingEpisodes?.some((item) => item.url))
+})
+
 const nextScheduledEpisode = computed(() => {
   if (anime.value?.status !== 'RELEASING') {
     return undefined
@@ -586,7 +590,8 @@ const episodeNumbers = computed(() => {
   const episodes = [...releasedEpisodeNumbers.value]
   const nextEpisodeNumber = nextScheduledEpisode.value?.episode || 0
   const totalEpisodes = anime.value?.episodes || 0
-  const canShowScheduledEpisode = nextEpisodeNumber > 0 && (!totalEpisodes || nextEpisodeNumber <= totalEpisodes)
+  const canShowScheduledEpisode =
+    !hasListedStreamingEpisodes.value && nextEpisodeNumber > 0 && (!totalEpisodes || nextEpisodeNumber <= totalEpisodes)
 
   if (canShowScheduledEpisode && !episodes.includes(nextEpisodeNumber)) {
     episodes.push(nextEpisodeNumber)

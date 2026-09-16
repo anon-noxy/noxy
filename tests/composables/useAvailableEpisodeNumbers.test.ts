@@ -59,6 +59,35 @@ describe('getAvailableEpisodeNumbers', () => {
     ).toEqual([1, 2, 3])
   })
 
+  it('uses a complete streamed episode list instead of generating unavailable episodes', () => {
+    expect(
+      getAvailableEpisodeNumbers({
+        status: 'RELEASING',
+        episodes: 8,
+        nextAiringEpisode: { episode: 9 },
+        streamingEpisodes: [
+          { title: 'Episode 1', url: '/watch/1' },
+          { title: 'Episode 2', url: '/watch/2' },
+          { title: 'Episode 3', url: '/watch/3' },
+        ],
+      }),
+    ).toEqual([1, 2, 3])
+  })
+
+  it('does not use partial streamed episode lists as the total episode count', () => {
+    expect(
+      getAvailableEpisodeNumbers({
+        status: 'RELEASING',
+        episodes: 8,
+        nextAiringEpisode: { episode: 9 },
+        streamingEpisodes: [
+          { title: 'Episode 2', url: '/watch/2' },
+          { title: 'Episode 3', url: '/watch/3' },
+        ],
+      }),
+    ).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+  })
+
   it('parses, deduplicates, and sorts streaming episode titles', () => {
     expect(
       getAvailableEpisodeNumbers({
