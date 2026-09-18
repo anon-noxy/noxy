@@ -171,9 +171,18 @@ useSeoMeta({
         {{ error.statusMessage || 'Unable to load A-Z results.' }}
       </div>
 
-      <div v-else-if="animeResults.length" class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <NAnimeHoverCard v-for="anime in animeResults" :key="anime.id" :anime-id="anime.id">
-          <NuxtLink :to="`/anime/${anime.id}`" class="group block text-[var(--color-text)] no-underline">
+      <NVirtualAnimeGrid
+        v-else-if="animeResults.length"
+        :items="animeResults"
+        class="mt-8"
+        :min-column-width="140"
+        :max-columns="6"
+        :estimated-item-height="380"
+        :virtualize-at="100"
+      >
+        <template #default="{ item: anime }">
+          <NAnimeHoverCard v-if="anime" :anime-id="anime.id">
+            <NuxtLink :to="`/anime/${anime.id}`" class="group block text-[var(--color-text)] no-underline">
             <div
               class="relative overflow-hidden rounded bg-[var(--color-background-soft)] ring-1 ring-white/0 transition duration-300 group-hover:ring-pink-300/35"
             >
@@ -236,9 +245,10 @@ useSeoMeta({
                 {{ genre }}
               </span>
             </div>
-          </NuxtLink>
-        </NAnimeHoverCard>
-      </div>
+            </NuxtLink>
+          </NAnimeHoverCard>
+        </template>
+      </NVirtualAnimeGrid>
 
       <NEmptyResults
         v-else

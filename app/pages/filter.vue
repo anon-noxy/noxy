@@ -677,12 +677,18 @@ useSeoMeta({
             {{ error.statusMessage || 'Unable to load filter results.' }}
           </div>
 
-          <div
+          <NVirtualAnimeGrid
             v-else-if="animeResults.length"
-            class="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
+            :items="animeResults"
+            class="mt-6"
+            :min-column-width="140"
+            :max-columns="6"
+            :estimated-item-height="400"
+            :virtualize-at="100"
           >
-            <NAnimeHoverCard v-for="anime in animeResults" :key="anime.id" :anime-id="anime.id">
-              <NuxtLink :to="`/anime/${anime.id}`" class="group block text-[var(--color-text)] no-underline">
+            <template #default="{ item: anime }">
+              <NAnimeHoverCard v-if="anime" :anime-id="anime.id">
+                <NuxtLink :to="`/anime/${anime.id}`" class="group block text-[var(--color-text)] no-underline">
                 <div
                   class="relative overflow-hidden rounded bg-[var(--color-background-soft)] ring-1 ring-white/0 transition duration-300 group-hover:ring-pink-300/35"
                 >
@@ -745,9 +751,10 @@ useSeoMeta({
                     {{ item }}
                   </span>
                 </div>
-              </NuxtLink>
-            </NAnimeHoverCard>
-          </div>
+                </NuxtLink>
+              </NAnimeHoverCard>
+            </template>
+          </NVirtualAnimeGrid>
 
           <NEmptyResults
             v-else

@@ -5,10 +5,44 @@ const siteTitle = 'Noxy - Watch Anime'
 const siteDescription =
   'Browse anime, discover trending titles, manage a local watchlist, and continue watching with Noxy.'
 const ogImageUrl = `${siteUrl}/og-image.png`
+const productionRouteRules =
+  process.env.NODE_ENV === 'production'
+    ? {
+        // These routes only render public anime metadata. ISR moves repeat page
+        // and API reads to Vercel's CDN, so a cache hit does not wake a Fluid
+        // function. Keep account, profile, watchlist, settings, and player
+        // routes dynamic.
+        '/': { isr: 10 * 60 },
+        '/home': { isr: 10 * 60 },
+        '/news': { isr: 10 * 60 },
+        '/anime/**': { isr: 60 },
+        '/az/**': { isr: 15 * 60 },
+        '/category/**': { isr: 15 * 60 },
+        '/genre/**': { isr: 15 * 60 },
+        '/contact': { prerender: true },
+        '/dmca': { prerender: true },
+        '/terms-of-service': { prerender: true },
+
+        '/api/news': { isr: 10 * 60 },
+        '/api/myanimelist/az': { isr: 15 * 60 },
+        '/api/myanimelist/catalog': { isr: 15 * 60 },
+        '/api/myanimelist/filter': { isr: 10 * 60 },
+        '/api/myanimelist/home-discover': { isr: 10 * 60 },
+        '/api/myanimelist/home-lists': { isr: 30 * 60 },
+        '/api/myanimelist/schedule': { isr: 10 * 60 },
+        '/api/myanimelist/search': { isr: 5 * 60 },
+        '/api/myanimelist/spotlight': { isr: 10 * 60 },
+        '/api/myanimelist/trending': { isr: 30 * 60 },
+        '/api/myanimelist/genre/**': { isr: 15 * 60 },
+        '/api/myanimelist/hover/**': { isr: 5 * 60 },
+        '/api/myanimelist/**': { isr: 60 },
+      }
+    : {}
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test' },
+  routeRules: productionRouteRules,
   modules: [
     '@nuxt/image',
     '@unocss/nuxt',
