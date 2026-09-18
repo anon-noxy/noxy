@@ -118,34 +118,6 @@ type AnimeDetails = {
   studios?: {
     nodes?: Array<{ id: number; name: string }>
   }
-  relations?: {
-    nodes?: RelatedAnime[]
-  }
-  seasonRelations?: {
-    nodes?: RelatedAnime[]
-  }
-  recommendations?: {
-    nodes?: Array<{ mediaRecommendation?: RelatedAnime }>
-  }
-}
-
-type RelatedAnime = {
-  id: number
-  title?: AnimeTitle
-  coverImage?: {
-    extraLarge?: string
-    large?: string
-    color?: string
-  }
-  format?: string
-  status?: string
-  averageScore?: number
-  episodes?: number
-  season?: string
-  seasonYear?: number
-  startDate?: FuzzyDate
-  relationType?: string
-  genres?: string[]
 }
 
 type ProgressConfirmationAction = 'complete' | 'clear'
@@ -156,9 +128,7 @@ const selectedLanguage = inject<Ref<string>>('selectedLanguage', ref('EN'))
 const userPreferences = useUserPreferencesStore()
 const { defaultWatchLanguage, watchedEpisodes } = storeToRefs(userPreferences)
 const { getAlternateAnimeTitle, getAnimeTitle } = useAnimeTitle(selectedLanguage)
-const { cleanAnimeDescription, formatAnimeDate, formatAnimeDisplayDate, formatAnimeNumber, formatAnimeText } =
-  useAnimeFormatters()
-const { excludeSeasonCollectionItems } = useAnimeRelationFilters()
+const { cleanAnimeDescription, formatAnimeDate, formatAnimeNumber, formatAnimeText } = useAnimeFormatters()
 const { isAnimeSaved, toggleAnimeSaved } = useAnimeWatchlist()
 const animeDetailsRefreshIntervalMs = 60 * 1000
 
@@ -228,82 +198,9 @@ const getTitle = (mediaTitle?: AnimeTitle) => getAnimeTitle(mediaTitle)
 const getAlternateTitle = (mediaTitle?: AnimeTitle) => getAlternateAnimeTitle(mediaTitle)
 const formatText = (value?: string) => formatAnimeText(value)
 const formatDate = (date?: FuzzyDate) => formatAnimeDate(date)
-const formatDisplayDate = (date?: FuzzyDate) => formatAnimeDisplayDate(date)
 const formatNumber = (value?: number) => formatAnimeNumber(value)
-const blockedAnimeGenres = new Set(['KIDS', 'PETS'])
-const blockedRelatedFormats = new Set(['MUSIC', 'CM', 'ONA', 'GENRE', 'TV_SHORT'])
-const blockedRelatedGenres = new Set(['MUSIC', ...blockedAnimeGenres])
-const sideStoryRelationTypes = new Set(['SIDE_STORY', 'SPIN_OFF', 'CHARACTER'])
-const featuredRelationTypes = new Set(['PREQUEL', 'SEQUEL', ...sideStoryRelationTypes])
-
 const isVisibleAnimeGenre = (genre?: string) => {
   return isSupportedAnimeGenre(genre)
-}
-
-const hasBlockedRelatedGenre = (genres?: string[]) => {
-  return Boolean(genres?.some((genre) => blockedRelatedGenres.has(genre.trim().toUpperCase())))
-}
-
-const isAllowedRelatedAnime = (item?: RelatedAnime) => {
-  const format = item?.format?.toUpperCase()
-  const relationType = item?.relationType?.toUpperCase()
-
-  return (
-    Boolean(item?.id) &&
-    item?.id !== anime.value?.id &&
-    !blockedRelatedFormats.has(format || '') &&
-    !blockedRelatedFormats.has(relationType || '') &&
-    !hasBlockedRelatedGenre(item?.genres)
-  )
-}
-
-const isAllowedSeasonAnime = (item?: RelatedAnime) => {
-  const format = item?.format?.toUpperCase()
-  const relationType = item?.relationType?.toUpperCase()
-  const hasBlockedFormat = blockedRelatedFormats.has(format || '') && format !== 'ONA'
-
-  return Boolean(item?.id) && !hasBlockedFormat && relationType !== 'MUSIC' && !hasBlockedRelatedGenre(item?.genres)
-}
-
-const getSeasonTitleText = (item?: RelatedAnime) => {
-  return [item?.title?.english, item?.title?.userPreferred, item?.title?.romaji, item?.title?.native]
-    .filter(Boolean)
-    .join(' ')
-}
-
-const hasMainSeasonCue = (value: string) => {
-  return /\b(?:season|part|cour|chapter|arc|final|kanketsu|2nd|3rd|4th|5th|second|third|fourth|fifth)\b/i.test(value)
-}
-
-const hasSideStoryCue = (value: string) => {
-  return /\b(?:ova|recap|summary|digest|chronicle|junior high|chibi|picture drama|side stories?|spin[-\s]?off|gaiden|no regrets|lost girls|before the fall|kuinaki sentaku)\b/i.test(
-    value,
-  )
-}
-
-const isMainSeasonAnime = (item?: RelatedAnime) => {
-  if (!isAllowedSeasonAnime(item)) {
-    return false
-  }
-
-  const titleText = getSeasonTitleText(item)
-  const hasMainCue = hasMainSeasonCue(titleText)
-
-  if (hasSideStoryCue(titleText) && !hasMainCue) {
-    return false
-  }
-
-  const format = item?.format?.toUpperCase()
-
-  if (format === 'TV') {
-    return true
-  }
-
-  if (hasMainCue) {
-    return true
-  }
-
-  return format === 'ONA' && (item?.episodes || 0) >= 4
 }
 
 const formatAiringDate = (timestamp?: number) => {
@@ -729,83 +626,6 @@ const visibleStreamingEpisodes = computed(() => {
   return anime.value?.streamingEpisodes?.filter((item) => item.url).slice(0, 4) || []
 })
 
-const currentSeasonItem = computed<RelatedAnime | undefined>(() => {
-  const media = anime.value
-
-  if (!media) return undefined
-
-  return {
-    id: media.id,
-    title: media.title,
-    coverImage: media.coverImage,
-    format: media.format,
-    status: media.status,
-    averageScore: media.averageScore,
-    episodes: media.episodes,
-    season: media.season,
-    seasonYear: media.seasonYear,
-    startDate: media.startDate,
-    relationType: 'CURRENT',
-    genres: media.genres,
-  }
-})
-
-const getSeasonDateKey = (item: RelatedAnime) => {
-  const year = item.startDate?.year || item.seasonYear || 0
-  const month = item.startDate?.month || 0
-  const day = item.startDate?.day || 0
-
-  return year * 10000 + month * 100 + day
-}
-
-const compareSeasonItems = (first: RelatedAnime, second: RelatedAnime) => {
-  const dateDiff = getSeasonDateKey(first) - getSeasonDateKey(second)
-
-  return dateDiff || first.id - second.id
-}
-
-const directMoreSeasonItems = computed(() => {
-  const currentSeason = currentSeasonItem.value
-
-  if (!currentSeason) return []
-
-  const timelineRelations = [...(anime.value?.relations?.nodes || [])].filter(
-    (item) =>
-      isMainSeasonAnime(item) &&
-      (item.relationType === 'PREQUEL' || item.relationType === 'SEQUEL') &&
-      item.id !== currentSeason.id,
-  )
-
-  if (!timelineRelations.length) return []
-
-  const currentSeasonItems = isMainSeasonAnime(currentSeason) ? [currentSeason] : []
-
-  return [
-    ...timelineRelations.filter((item) => item.relationType === 'PREQUEL').sort(compareSeasonItems),
-    ...currentSeasonItems,
-    ...timelineRelations.filter((item) => item.relationType === 'SEQUEL').sort(compareSeasonItems),
-  ]
-})
-
-const moreSeasonItems = computed(() => {
-  const seenIds = new Set<number>()
-  const apiSeasonItems =
-    anime.value?.seasonRelations?.nodes?.filter(isMainSeasonAnime).filter((item) => {
-      if (seenIds.has(item.id)) {
-        return false
-      }
-
-      seenIds.add(item.id)
-      return true
-    }) || []
-
-  if (apiSeasonItems.length > 1) {
-    return apiSeasonItems
-  }
-
-  return directMoreSeasonItems.value
-})
-
 const visibleCharacters = computed(() => {
   return anime.value?.characters?.nodes?.slice(0, 12) || []
 })
@@ -813,126 +633,6 @@ const visibleCharacters = computed(() => {
 const visibleStaff = computed(() => {
   return anime.value?.staff?.nodes?.slice(0, 10) || []
 })
-
-const recommendationItems = computed(() => {
-  return (
-    anime.value?.recommendations?.nodes
-      ?.map((item) => item.mediaRecommendation)
-      .filter((item): item is RelatedAnime => Boolean(item) && isAllowedRelatedAnime(item))
-      .slice(0, 10) || []
-  )
-})
-
-const relationItems = computed(() => {
-  const allowedItems = anime.value?.relations?.nodes?.filter(isAllowedRelatedAnime) || []
-
-  return excludeSeasonCollectionItems(allowedItems, moreSeasonItems.value)
-})
-
-const prequelItems = computed(() => {
-  return relationItems.value.filter((item) => item.relationType === 'PREQUEL')
-})
-
-const sequelItems = computed(() => {
-  return relationItems.value.filter((item) => item.relationType === 'SEQUEL')
-})
-
-const sideStoryItems = computed(() => {
-  return relationItems.value.filter((item) => sideStoryRelationTypes.has(item.relationType?.toUpperCase() || ''))
-})
-
-const otherRelationItems = computed(() => {
-  return relationItems.value.filter((item) => !featuredRelationTypes.has(item.relationType?.toUpperCase() || ''))
-})
-
-const relatedAnimeSections = computed(() => {
-  return [
-    { title: 'Sequels', items: sequelItems.value },
-    { title: 'Prequels', items: prequelItems.value },
-    { title: 'Side Stories', items: sideStoryItems.value },
-    { title: 'Recommended', items: recommendationItems.value },
-    { title: 'More Related', items: otherRelationItems.value },
-  ].filter((section) => section.items.length)
-})
-
-const relatedCardFormat = (item: RelatedAnime) => (item.format ? formatText(item.format) : '')
-
-const relatedCardDate = (item: RelatedAnime) => {
-  return item.startDate?.year ? formatDisplayDate(item.startDate) : item.seasonYear ? String(item.seasonYear) : ''
-}
-
-const normalizeSeasonPart = (value?: string) => {
-  return (value || '')
-    .replace(/\b(part|cour)\b/gi, (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-const seasonLabelFromTitle = (value?: string) => {
-  const titleValue = value?.trim()
-
-  if (!titleValue) return ''
-
-  const seasonPartMatch = titleValue.match(/season\s*(\d+)\s*(?::|-)?\s*((?:part|cour)\s*\d+(?:\s*\([^)]+\))?)/i)
-
-  if (seasonPartMatch?.[1]) {
-    return `Season ${Number(seasonPartMatch[1])}: ${normalizeSeasonPart(seasonPartMatch[2])}`
-  }
-
-  const ordinalSeasonMatch = titleValue.match(
-    /(\d+)(?:st|nd|rd|th)\s+season\s*(?::|-)?\s*((?:part|cour)\s*\d+(?:\s*\([^)]+\))?)/i,
-  )
-
-  if (ordinalSeasonMatch?.[1]) {
-    const seasonPart = normalizeSeasonPart(ordinalSeasonMatch[2])
-
-    return `Season ${Number(ordinalSeasonMatch[1])}${seasonPart ? `: ${seasonPart}` : ''}`
-  }
-
-  const simpleSeasonMatch = titleValue.match(/season\s*(\d+)/i)
-
-  if (simpleSeasonMatch?.[1]) {
-    return `Season ${Number(simpleSeasonMatch[1])}`
-  }
-
-  const finalSeasonMatch = titleValue.match(/final\s+season(?:\s*(?::|-)?\s*((?:part|cour)\s*\d+(?:\s*\([^)]+\))?))?/i)
-
-  if (finalSeasonMatch) {
-    const seasonPart = normalizeSeasonPart(finalSeasonMatch[1])
-
-    return `Final Season${seasonPart ? `: ${seasonPart}` : ''}`
-  }
-
-  return ''
-}
-
-const getMoreSeasonLabel = (item: RelatedAnime, index: number) => {
-  const label =
-    seasonLabelFromTitle(item.title?.english) ||
-    seasonLabelFromTitle(item.title?.userPreferred) ||
-    seasonLabelFromTitle(item.title?.romaji) ||
-    seasonLabelFromTitle(item.title?.native)
-
-  return label || `Season ${index + 1}`
-}
-
-const getMoreSeasonImage = (item: RelatedAnime) => {
-  return item.coverImage?.extraLarge || item.coverImage?.large || ''
-}
-
-const getMoreSeasonMeta = (item: RelatedAnime) => {
-  return [
-    item.format ? formatText(item.format) : '',
-    item.seasonYear ? String(item.seasonYear) : '',
-    item.episodes ? `${item.episodes} episodes` : '',
-  ]
-    .filter(Boolean)
-    .join(' • ')
-}
-
-const getMoreSeasonLink = (item: RelatedAnime) => {
-  return `/anime/${item.id}`
-}
 
 const personName = (person?: AnimePerson) => {
   return person?.name?.userPreferred || person?.name?.full || person?.name?.native || 'Unknown'
@@ -1205,93 +905,40 @@ useSeoMeta({
       <section
         class="relative mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-8 lg:py-12"
       >
-        <section
-          v-if="moreSeasonItems.length > 1"
-          class="min-w-0 rounded-2xl border border-white/8 bg-[linear-gradient(135deg,rgba(249,168,212,.07),rgba(32,31,52,.7)_45%,rgba(24,24,39,.9))] p-5 shadow-xl shadow-black/10 sm:p-6 lg:col-span-2"
-        >
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <h2 class="text-2xl font-extrabold text-[var(--color-heading)]">More Seasons</h2>
-              <p class="mt-1 text-xs text-[var(--color-text)]/55">Explore every available part of this series.</p>
-            </div>
-            <span
-              class="grid h-8 min-w-8 shrink-0 place-items-center rounded-full bg-pink-300/15 px-2 text-xs font-black text-pink-200"
-            >
-              {{ moreSeasonItems.length }}
-            </span>
-          </div>
-
-          <div class="mt-4 grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr))">
-            <NAnimeHoverCard
-              v-for="(item, index) in moreSeasonItems"
-              :key="item.id"
-              :anime-id="item.id"
-              class="min-w-0"
-            >
-              <NuxtLink
-                :to="getMoreSeasonLink(item)"
-                class="group relative flex h-24 min-w-0 overflow-hidden border text-white no-underline transition duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-300 sm:h-26"
-                :class="
-                  item.id === anime.id
-                    ? 'border-pink-300/80 ring-1 ring-pink-300/25'
-                    : 'border-white/10 hover:-translate-y-0.5 hover:border-pink-300/60 hover:shadow-xl hover:shadow-black/20'
-                "
-                :aria-current="item.id === anime.id ? 'page' : undefined"
-              >
-                <NRemoteImage
-                  v-if="getMoreSeasonImage(item)"
-                  :src="getMoreSeasonImage(item)"
-                  :alt="getMoreSeasonLabel(item, index)"
-                  :placeholder-color="item.coverImage?.color"
-                  class="absolute inset-0 h-full w-full scale-105 object-cover opacity-65 blur-[2px] transition duration-500 group-hover:scale-110 group-hover:opacity-75"
-                  loading="lazy"
-                />
-                <span v-else class="absolute inset-0 bg-[var(--color-background-mute)]" />
-                <span class="absolute inset-0 bg-gradient-to-r from-black/90 via-black/55 to-black/25" />
-                <span class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 to-transparent" />
-                <span v-if="item.id === anime.id" class="absolute inset-0 bg-pink-300/8" />
-
-                <span class="relative z-10 flex w-full flex-col justify-between p-3">
-                  <span class="flex items-center justify-between gap-3">
-                    <span
-                      class="rounded bg-black/45 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white/75 backdrop-blur-sm"
-                    >
-                      {{ getMoreSeasonLabel(item, index) }}
-                    </span>
-                    <span
-                      v-if="item.id === anime.id"
-                      class="inline-flex items-center gap-1 rounded bg-pink-300 px-2 py-1 text-[9px] font-black uppercase text-black"
-                    >
-                      <span class="h-1.5 w-1.5 rounded-full bg-black" />
-                      Current
-                    </span>
-                  </span>
-
-                  <span class="flex min-w-0 items-end justify-between gap-3">
-                    <span class="min-w-0">
-                      <span class="block truncate text-sm font-extrabold sm:text-base">
-                        {{ getMoreSeasonLabel(item, index) }}
-                      </span>
-                      <span
-                        v-if="getMoreSeasonMeta(item)"
-                        class="mt-1 block truncate text-[10px] font-semibold text-white/60 sm:text-xs"
-                      >
-                        {{ getMoreSeasonMeta(item) }}
-                      </span>
-                    </span>
-                  </span>
-                </span>
-              </NuxtLink>
-            </NAnimeHoverCard>
-          </div>
-        </section>
-
         <div class="min-w-0 space-y-8">
           <section class="rounded-2xl border border-white/8 bg-[var(--color-background-soft)]/55 p-5 sm:p-6">
             <h2 class="text-2xl font-extrabold text-[var(--color-heading)]">Overview</h2>
             <p class="mt-5 whitespace-pre-line text-sm leading-7 text-[var(--color-text)]/72 sm:text-base">
               {{ cleanDescription }}
             </p>
+          </section>
+
+          <section class="rounded-2xl border border-white/8 bg-[var(--color-background-soft)]/55 p-5 sm:p-6">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 class="text-2xl font-extrabold text-[var(--color-heading)]">Anime Information</h2>
+                <p class="mt-1 text-sm text-[var(--color-text)]/60">
+                  Release, production, audience, and MyAnimeList details.
+                </p>
+              </div>
+              <span
+                v-if="anime.idMal"
+                class="rounded-full border border-pink-300/15 bg-pink-300/10 px-3 py-1.5 text-xs font-bold text-pink-200"
+              >
+                MAL #{{ anime.idMal }}
+              </span>
+            </div>
+
+            <dl class="mt-5 grid gap-x-8 gap-y-0 sm:grid-cols-2">
+              <div
+                v-for="[label, value] in detailRows"
+                :key="label"
+                class="flex items-start justify-between gap-4 border-b border-white/6 py-3"
+              >
+                <dt class="text-sm text-[var(--color-text)]/60">{{ label }}</dt>
+                <dd class="max-w-[60%] text-right text-sm font-semibold text-[var(--color-heading)]">{{ value }}</dd>
+              </div>
+            </dl>
           </section>
 
           <section
@@ -1408,72 +1055,6 @@ useSeoMeta({
               </span>
             </div>
           </section>
-
-          <div
-            v-if="relatedAnimeSections.length"
-            class="rounded-2xl border border-white/8 bg-[var(--color-background-soft)]/45 p-5 sm:p-6"
-          >
-            <h2 class="text-2xl font-extrabold text-[var(--color-heading)]">Related Anime</h2>
-
-            <div class="mt-5 space-y-8">
-              <section v-for="section in relatedAnimeSections" :key="section.title">
-                <div class="flex items-center justify-between gap-4">
-                  <h3 class="text-lg font-bold text-[var(--color-heading)]">{{ section.title }}</h3>
-                  <span
-                    class="rounded bg-[var(--color-background-soft)] px-2 py-1 text-xs font-bold text-[var(--color-text)]/60"
-                  >
-                    {{ section.items.length }}
-                  </span>
-                </div>
-
-                <div class="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                  <NAnimeHoverCard
-                    v-for="item in section.items"
-                    :key="item.id"
-                    :anime-id="item.id"
-                    hide-format-and-genres
-                  >
-                    <NuxtLink
-                      :to="`/anime/${item.id}`"
-                      class="group block min-w-0 text-[var(--color-text)] no-underline"
-                    >
-                      <div
-                        class="relative aspect-[3/4] overflow-hidden border border-white/8 bg-[var(--color-background-soft)]"
-                      >
-                        <NRemoteImage
-                          :src="item.coverImage?.extraLarge || item.coverImage?.large"
-                          :alt="getTitle(item.title)"
-                          :placeholder-color="item.coverImage?.color"
-                          class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                          loading="lazy"
-                        />
-                      </div>
-                      <NTitleTransition
-                        as="h3"
-                        :text="getTitle(item.title)"
-                        :title="getTitle(item.title)"
-                        :transition-key="`${selectedLanguage}-${item.id}`"
-                        class="mt-3 truncate text-sm font-bold text-white transition group-hover:text-pink-300"
-                      />
-                      <div
-                        v-if="relatedCardFormat(item) || relatedCardDate(item)"
-                        class="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--color-text)]/70"
-                      >
-                        <span v-if="relatedCardFormat(item)">{{ relatedCardFormat(item) }}</span>
-                        <span
-                          v-if="relatedCardFormat(item) && relatedCardDate(item)"
-                          class="text-[var(--color-text)]/40"
-                        >
-                          •
-                        </span>
-                        <span v-if="relatedCardDate(item)">{{ relatedCardDate(item) }}</span>
-                      </div>
-                    </NuxtLink>
-                  </NAnimeHoverCard>
-                </div>
-              </section>
-            </div>
-          </div>
 
           <div
             v-if="visibleCharacters.length"
@@ -1658,20 +1239,6 @@ useSeoMeta({
                 <p class="mt-1 text-sm text-[var(--color-text)]/60">Watch trailer</p>
               </div>
             </button>
-          </div>
-
-          <div class="rounded-2xl border border-white/8 bg-[var(--color-background-soft)]/60 p-5">
-            <h2 class="text-lg font-extrabold text-[var(--color-heading)]">Details</h2>
-            <dl class="mt-4 space-y-3 text-sm">
-              <div
-                v-for="[label, value] in detailRows"
-                :key="label"
-                class="flex justify-between gap-4 border-b border-white/6 pb-3 last:border-b-0 last:pb-0"
-              >
-                <dt class="text-[var(--color-text)]/60">{{ label }}</dt>
-                <dd class="text-right font-semibold">{{ value }}</dd>
-              </div>
-            </dl>
           </div>
 
           <div

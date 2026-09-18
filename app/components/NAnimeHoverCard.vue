@@ -53,6 +53,7 @@ const triggerRef = ref<HTMLElement | null>(null)
 const details = ref<AnimeDetails | null>(null)
 const isOpen = ref(false)
 const isLoading = ref(false)
+const isHoveringTrigger = ref(false)
 const position = reactive({
   left: 0,
   top: 0,
@@ -149,7 +150,7 @@ const loadDetails = async () => {
 
 const { start: startOpenTimer, stop: stopOpenTimer } = useTimeoutFn(
   () => {
-    void loadDetails()
+    void revealWhenReady()
   },
   450,
   { immediate: false },
@@ -165,23 +166,27 @@ const { start: startCloseTimer, stop: stopCloseTimer } = useTimeoutFn(
 const open = () => {
   if (!canHover()) return
 
+  isHoveringTrigger.value = true
   stopCloseTimer()
 
-  updatePosition()
-  isOpen.value = true
-
-  if (details.value) return
+  if (details.value) {
+    updatePosition()
+    isOpen.value = true
+    return
+  }
 
   stopOpenTimer()
   startOpenTimer()
 }
 
 const close = () => {
+  isHoveringTrigger.value = false
   stopOpenTimer()
   startCloseTimer()
 }
 
 const closeImmediately = () => {
+  isHoveringTrigger.value = false
   stopOpenTimer()
   stopCloseTimer()
   isOpen.value = false
@@ -189,6 +194,15 @@ const closeImmediately = () => {
 
 const keepOpen = () => {
   stopCloseTimer()
+}
+
+const revealWhenReady = async () => {
+  await loadDetails()
+
+  if (!isDisposed && isHoveringTrigger.value && details.value) {
+    updatePosition()
+    isOpen.value = true
+  }
 }
 
 useEventListener(import.meta.client ? window : null, 'scroll', updatePosition, { capture: true })
@@ -224,11 +238,7 @@ watch(() => route.fullPath, closeImmediately)
       @pointerenter="keepOpen"
       @pointerleave="close"
     >
-      <div v-if="isLoading && !details" class="flex h-64 items-center justify-center text-pink-300">
-        <div class="text-4xl" i-eos-icons:three-dots-loading />
-      </div>
-
-      <template v-else-if="details">
+      <template v-if="details">
         <div class="flex gap-3">
           <NRemoteImage
             v-if="image"
