@@ -127,7 +127,7 @@ const handler = defineCachedEventHandler(
   },
   {
     maxAge: 60 * 10,
-    name: 'myanimelist-filter-safe-genres-v8',
+    name: 'myanimelist-filter-safe-genres-v9',
     getKey: (event) => getRequestURL(event).searchParams.toString(),
   },
 )

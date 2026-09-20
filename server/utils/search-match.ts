@@ -34,7 +34,20 @@ export const isSearchTitleMatch = (title: string, query: string) => {
   const looseTitle = toLooseSearchComparable(title)
   const looseQuery = toLooseSearchComparable(query)
 
-  return Boolean(looseTitle && looseQuery && looseTitle.includes(looseQuery))
+  if (!looseTitle || !looseQuery) {
+    return false
+  }
+
+  if (looseTitle.includes(looseQuery)) {
+    return true
+  }
+
+  // A title often contains connecting words that users omit, such as
+  // "Attack on Titan" for a search of "attack titan". Treat multi-word
+  // searches as keywords while still requiring every keyword to be present.
+  const keywords = looseQuery.split(' ').filter(Boolean)
+
+  return keywords.length > 1 && keywords.every((keyword) => looseTitle.includes(keyword))
 }
 
 const uniqueTitles = (titles: Array<string | undefined>) => {

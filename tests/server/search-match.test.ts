@@ -50,6 +50,14 @@ describe('filter search title matching', () => {
     expect(isSearchTitleMatch('.hack//Sign', 'hack sign')).toBe(true)
   })
 
+  it('matches every keyword when title-only connector words are omitted', () => {
+    expect(isSearchTitleMatch('Attack on Titan', 'attack titan')).toBe(true)
+  })
+
+  it('requires every keyword in a multi-word search', () => {
+    expect(isSearchTitleMatch('Attack on Titan', 'attack demon')).toBe(false)
+  })
+
   it('does not report a match when no known title contains the query', () => {
     expect(getSearchTitleMatch(anime('Cowboy Bebop'), 'quint')).toBeNull()
   })
