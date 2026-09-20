@@ -369,7 +369,7 @@ const handler = defineCachedEventHandler(
     }
   },
   {
-    maxAge: 60,
+    maxAge: 60 * 60,
     name: 'mal-anime-details-episode-titles-v20',
     getKey: (event) => `v20:${getRouterParam(event, 'id')}`,
   },

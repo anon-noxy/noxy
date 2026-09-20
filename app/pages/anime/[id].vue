@@ -130,7 +130,7 @@ const { defaultWatchLanguage, watchedEpisodes } = storeToRefs(userPreferences)
 const { getAlternateAnimeTitle, getAnimeTitle } = useAnimeTitle(selectedLanguage)
 const { cleanAnimeDescription, formatAnimeDate, formatAnimeNumber, formatAnimeText } = useAnimeFormatters()
 const { isAnimeSaved, toggleAnimeSaved } = useAnimeWatchlist()
-const animeDetailsRefreshIntervalMs = 60 * 1000
+const animeDetailsRefreshIntervalMs = 15 * 60 * 1000
 
 const {
   data: anime,
@@ -176,13 +176,12 @@ const shouldRefreshCurrentEpisodes = () => {
 }
 
 const refreshCurrentEpisodes = () => {
-  if (!shouldRefreshCurrentEpisodes()) return
+  if (!shouldRefreshCurrentEpisodes() || document.visibilityState !== 'visible') return
 
   void refreshAnimeDetails({ dedupe: 'cancel' })
 }
 
 onMounted(() => {
-  refreshCurrentEpisodes()
   animeDetailsRefreshTimer = setInterval(refreshCurrentEpisodes, animeDetailsRefreshIntervalMs)
 })
 

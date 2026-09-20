@@ -139,7 +139,7 @@ const { getAnimeTitle } = useAnimeTitle(selectedLanguage)
 const { cleanAnimeDescription, formatAnimeDisplayDate, formatAnimeText } = useAnimeFormatters()
 const { excludeSeasonCollectionItems } = useAnimeRelationFilters()
 const { isAnimeSaved, toggleAnimeSaved } = useAnimeWatchlist()
-const animeDetailsRefreshIntervalMs = 60 * 1000
+const animeDetailsRefreshIntervalMs = 15 * 60 * 1000
 const episode = computed(() => {
   const value = Number(route.query.episode || 1)
   return Number.isInteger(value) && value > 0 ? value : 1
@@ -177,7 +177,7 @@ const shouldRefreshCurrentEpisodes = () => {
 }
 
 const refreshCurrentEpisodes = () => {
-  if (!shouldRefreshCurrentEpisodes()) return
+  if (!shouldRefreshCurrentEpisodes() || document.visibilityState !== 'visible') return
 
   void refreshAnimeDetails({ dedupe: 'cancel' })
 }
@@ -185,7 +185,6 @@ const refreshCurrentEpisodes = () => {
 onMounted(() => {
   currentTimestamp.value = Date.now()
   localTimezone.value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local time'
-  refreshCurrentEpisodes()
   animeDetailsRefreshTimer = setInterval(refreshCurrentEpisodes, animeDetailsRefreshIntervalMs)
   scheduleClockTimer = setInterval(() => {
     currentTimestamp.value = Date.now()

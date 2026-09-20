@@ -204,8 +204,8 @@ const handler = defineCachedEventHandler(
     )
   },
   {
-    maxAge: 60 * 10,
-    name: 'mal-spotlight-current-year-releasing-tv-score-v11',
+    maxAge: 60 * 60 * 6,
+    name: 'mal-spotlight-current-year-releasing-tv-score-v12',
   },
 )
 

@@ -156,7 +156,6 @@ let spotlightTimer: number | null = null
 let carouselNavigationFrame: number | null = null
 let watchlistEpisodeTotalsRequestId = 0
 
-const prefetchedAnimeIds = new Set<number>()
 const preloadedAnimeImages = new Set<string>()
 
 const upNextItemLimit = 5
@@ -271,12 +270,10 @@ const preloadAnimeImage = (image?: string) => {
 }
 
 const prefetchAnimePage = (animeId: number, image?: string) => {
-  if (!import.meta.client || prefetchedAnimeIds.has(animeId)) return
+  if (!import.meta.client) return
 
-  prefetchedAnimeIds.add(animeId)
   preloadAnimeImage(image)
   preloadRouteComponents(`/anime/${animeId}`).catch(() => {})
-  $fetch(`/api/myanimelist/${animeId}`).catch(() => {})
 }
 
 const spotlightAnimes = computed(() => data.value || [])
